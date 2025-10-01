@@ -1,0 +1,1643 @@
+{
+  attributes: {
+    "dataSource.category": "security",
+    "dataSource.name": "FortiGate",
+    "dataSource.vendor": "Fortinet",
+    "metadata.version": "1.0.2",
+    "metadata.product.vendor_name": "Fortinet",
+    "metadata.product.name": "FortiGate",
+    "severity_id": 99
+  },
+  patterns: {
+    "dateString": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
+    "timeString": "[0-9]{2}:[0-9]{2}:[0-9]{2}",
+    "ipv4": "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}"
+  },
+  formats: [
+    {
+      "format": "<$syslog_priority$>",
+      "repeat": false
+    }, {
+      id: "space_delimited",
+      format: ".*$_=identifier$=$_=quoteOrSpace$.*",
+      repeat: true,
+      skipNumericConversion: true,
+      "rewrites": [
+        {
+          "input": "eventtime",
+          "output": "timestamp",
+          "match": ".*",
+          "replace": "$0"
+        }, {
+          "input": "eventtime",
+          "output": "ocsf_time",
+          "match": "^(\\d{13})(\\d{6})",
+          "replace": "$1"
+        }, {
+          "input": "level",
+          "output": "unmapped.level",
+          "match": "^\"information\"$",
+          "replace": "information"
+        }, {
+          "input": "level",
+          "output": "unmapped.level",
+          "match": "^\"notice\"$",
+          "replace": "notice"
+        }
+      ]
+    }, {
+      id: "comma_delimited",
+      format: ".*$_=identifier$=$_=quotable$[,]?.*",
+      repeat: true,
+      skipNumericConversion: true,
+      "rewrites": [
+        {
+          "input": "eventtime",
+          "output": "timestamp",
+          "match": ".*",
+          "replace": "$0"
+        }, {
+          "input": "eventtime",
+          "output": "ocsf_time",
+          "match": "^(\\d{13})(\\d{6})",
+          "replace": "$1"
+        }, {
+          "input": "level",
+          "output": "unmapped.level",
+          "match": "^\"information\"$",
+          "replace": "information"
+        }, {
+          "input": "level",
+          "output": "unmapped.level",
+          "match": "^\"notice\"$",
+          "replace": "notice"
+        }
+      ]
+    }
+  ],
+  mappings: {
+    version: 0,
+    mappings: [
+      {
+        predicate: "type='traffic'",
+        copies: [
+          {
+            inputs: [
+              "type"
+            ],
+            output: "event.type",
+            type: "string"
+          }, {
+            inputs: [
+              "ocsf_time"
+            ],
+            output: "time",
+            type: "int"
+          }, {
+            inputs: [
+              "srcip"
+            ],
+            output: "observables[0].value",
+            type: "string"
+          }, {
+            inputs: [
+              "dstip"
+            ],
+            output: "observables[1].value",
+            type: "string"
+          }, {
+            inputs: [
+              "srcmac"
+            ],
+            output: "observables[2].value",
+            type: "string"
+          }, {
+            inputs: [
+              "dstmac"
+            ],
+            output: "observables[3].value",
+            type: "string"
+          }, {
+            inputs: [
+              "transip"
+            ],
+            output: "src_endpoint.intermediate_ips[0]",
+            type: "string"
+          }, {
+            inputs: [
+              "subtype"
+            ],
+            output: "event.type",
+            type: "string",
+            predicate: "type='traffic'",
+            value: "Network"
+          }
+        ],
+        renames: [
+          {
+            inputs: [
+              "type"
+            ],
+            output: "activity_name",
+            type: "string"
+          }, {
+            inputs: [
+              "dstip"
+            ],
+            output: "dst_endpoint.ip",
+            type: "string"
+          }, {
+            inputs: [
+              "dstport"
+            ],
+            output: "dst_endpoint.port",
+            type: "string"
+          }, {
+            inputs: [
+              "action"
+            ],
+            output: "unmapped.action",
+            type: "string"
+          }, {
+            inputs: [
+              "appcat"
+            ],
+            output: "unmapped.appcat",
+            type: "string"
+          }, {
+            inputs: [
+              "app"
+            ],
+            output: "app_name",
+            type: "string"
+          }, {
+            inputs: [
+              "date"
+            ],
+            output: "unmapped.date",
+            type: "string"
+          }, {
+            inputs: [
+              "devid"
+            ],
+            output: "device.uid",
+            type: "string"
+          }, {
+            inputs: [
+              "devname"
+            ],
+            output: "device.name",
+            type: "string"
+          }, {
+            inputs: [
+              "dstcountry"
+            ],
+            output: "dst_endpoint.location.country",
+            type: "string"
+          }, {
+            inputs: [
+              "dstintf"
+            ],
+            output: "dst_endpoint.interface_name",
+            type: "string"
+          }, {
+            inputs: [
+              "dstip"
+            ],
+            output: "dst_endpoint.ip",
+            type: "string"
+          }, {
+            inputs: [
+              "dstmac"
+            ],
+            output: "dst_endpoint.mac",
+            type: "string"
+          }, {
+            inputs: [
+              "dstport"
+            ],
+            output: "dst_endpoint.port",
+            type: "string"
+          }, {
+            inputs: [
+              "eventtime"
+            ],
+            output: "metadata.original_time",
+            type: "string"
+          }, {
+            inputs: [
+              "level"
+            ],
+            output: "unmapped.level",
+            type: "string"
+          }, {
+            inputs: [
+              "logid"
+            ],
+            output: "metadata.uid",
+            type: "string"
+          }, {
+            inputs: [
+              "policytype"
+            ],
+            output: "unmapped.policytype",
+            type: "string"
+          }, {
+            inputs: [
+              "poluuid"
+            ],
+            output: "unmapped.poluuid",
+            type: "string"
+          }, {
+            inputs: [
+              "proto"
+            ],
+            output: "connection_info.protocol_num",
+            type: "string"
+          }, {
+            inputs: [
+              "sentbyte"
+            ],
+            output: "traffic.bytes_out",
+            type: "string"
+          }, {
+            inputs: [
+              "rcvdbyte"
+            ],
+            output: "traffic.bytes_in",
+            type: "string"
+          }, {
+            inputs: [
+              "sentpkt"
+            ],
+            output: "traffic.packets_out",
+            type: "string"
+          }, {
+            inputs: [
+              "rcvdpkt"
+            ],
+            output: "traffic.packets_in",
+            type: "string"
+          }, {
+            inputs: [
+              "service"
+            ],
+            output: "src_endpoint.svc_name",
+            type: "string"
+          }, {
+            inputs: [
+              "sessionid"
+            ],
+            output: "actor.session.uid",
+            type: "string"
+          }, {
+            inputs: [
+              "srcip"
+            ],
+            output: "src_endpoint.ip",
+            type: "string"
+          }, {
+            inputs: [
+              "srcmac"
+            ],
+            output: "src_endpoint.mac",
+            type: "string"
+          }, {
+            inputs: [
+              "srccountry"
+            ],
+            output: "src_endpoint.location.country",
+            type: "string"
+          }, {
+            inputs: [
+              "srcintf"
+            ],
+            output: "src_endpoint.interface_name",
+            type: "string"
+          }, {
+            inputs: [
+              "srcintfrole"
+            ],
+            output: "unmapped.srcintfrole",
+            type: "string"
+          }, {
+            inputs: [
+              "srcport"
+            ],
+            output: "src_endpoint.port",
+            type: "string"
+          }, {
+            inputs: [
+              "subtype"
+            ],
+            output: "metadata.log_name",
+            type: "string"
+          }, {
+            inputs: [
+              "time"
+            ],
+            output: "unmapped.parsed_time",
+            type: "string"
+          }, {
+            inputs: [
+              "transport"
+            ],
+            output: "unmapped.transport",
+            type: "string"
+          }, {
+            inputs: [
+              "vd"
+            ],
+            output: "device.domain",
+            type: "string"
+          }, {
+            inputs: [
+              "srcserver"
+            ],
+            output: "unmapped.srcserver",
+            type: "string"
+          }, {
+            inputs: [
+              "dstserver"
+            ],
+            output: "unmapped.dstserver",
+            type: "string"
+          }, {
+            inputs: [
+              "tz"
+            ],
+            output: "timezone_offset",
+            type: "string"
+          }, {
+            inputs: [
+              "mastersrcmac"
+            ],
+            output: "unmapped.mastersrcmac",
+            type: "string"
+          }, {
+            inputs: [
+              "dstosname"
+            ],
+            output: "unmapped.dstosname",
+            type: "string"
+          }, {
+            inputs: [
+              "dstswversion"
+            ],
+            output: "unmapped.dstswversion",
+            type: "string"
+          }, {
+            inputs: [
+              "masterdstmac"
+            ],
+            output: "unmapped.masterdstmac",
+            type: "string"
+          }, {
+            inputs: [
+              "sentdelta"
+            ],
+            output: "unmapped.sentdelta",
+            type: "string"
+          }, {
+            inputs: [
+              "rcvddelta"
+            ],
+            output: "unmapped.rcvddelta",
+            type: "string"
+          }, {
+            inputs: [
+              "identifier"
+            ],
+            output: "metadata.event_code",
+            type: "string"
+          }, {
+            inputs: [
+              "centralnatid"
+            ],
+            output: "unmapped.centralnatid",
+            type: "string"
+          }, {
+            inputs: [
+              "crscore"
+            ],
+            output: "unmapped.crscore",
+            type: "string"
+          }, {
+            inputs: [
+              "craction"
+            ],
+            output: "unmapped.craction",
+            type: "string"
+          }, {
+            inputs: [
+              "crlevel"
+            ],
+            output: "unmapped.crlevel",
+            type: "string"
+          }, {
+            inputs: [
+              "srchwvendor"
+            ],
+            output: "unmapped.srchwvendor",
+            type: "string"
+          }, {
+            inputs: [
+              "devtype"
+            ],
+            output: "device.type",
+            type: "string"
+          }, {
+            inputs: [
+              "srcfamily"
+            ],
+            output: "unmapped.srcfamily",
+            type: "string"
+          }, {
+            inputs: [
+              "countapp"
+            ],
+            output: "count",
+            type: "int"
+          }, {
+            inputs: [
+              "id"
+            ],
+            output: "unmapped.id",
+            type: "string"
+          }, {
+            inputs: [
+              "bid"
+            ],
+            output: "unmapped.bid",
+            type: "string"
+          }, {
+            inputs: [
+              "dvid"
+            ],
+            output: "unmapped.dvid",
+            type: "string"
+          }, {
+            inputs: [
+              "itime"
+            ],
+            output: "unmapped.itime",
+            type: "string"
+          }, {
+            inputs: [
+              "euid"
+            ],
+            output: "unmapped.euid",
+            type: "string"
+          }, {
+            inputs: [
+              "dsteuid"
+            ],
+            output: "unmapped.dsteuid",
+            type: "string"
+          }, {
+            inputs: [
+              "dstepid"
+            ],
+            output: "unmapped.dstepid",
+            type: "string"
+          }, {
+            inputs: [
+              "logver"
+            ],
+            output: "metadata.log_version",
+            type: "string"
+          }, {
+            inputs: [
+              "osname"
+            ],
+            output: "device.os.name",
+            type: "string"
+          }, {
+            inputs: [
+              "msg"
+            ],
+            output: "unmapped.msg",
+            type: "string"
+          }, {
+            inputs: [
+              "utmaction"
+            ],
+            output: "unmapped.utmaction",
+            type: "string"
+          }, {
+            inputs: [
+              "countips"
+            ],
+            output: "unmapped.countips",
+            type: "string"
+          }, {
+            inputs: [
+              "utmref"
+            ],
+            output: "unmapped.utmref",
+            type: "string"
+          }, {
+            inputs: [
+              "dstintfrole"
+            ],
+            output: "unmapped.dstintfrole",
+            type: "string"
+          }, {
+            inputs: [
+              "trandisp"
+            ],
+            output: "unmapped.trandisp",
+            type: "string"
+          }, {
+            inputs: [
+              "dsthwvendor"
+            ],
+            output: "metadata.product.vendor_name",
+            type: "string"
+          }, {
+            inputs: [
+              "policyid"
+            ],
+            output: "actor.authorizations[0].policy.uid",
+            type: "string"
+          }, {
+            inputs: [
+              "policyname"
+            ],
+            output: "actor.authorizations[0].policy.name",
+            type: "string"
+          }, {
+            inputs: [
+              "srcip"
+            ],
+            output: "src_endpoint.ip",
+            type: "ip"
+          }, {
+            inputs: [
+              "dstip"
+            ],
+            output: "dst_endpoint.ip",
+            type: "ip"
+          }, {
+            inputs: [
+              "srcport"
+            ],
+            output: "src_endpoint.port",
+            type: "integer"
+          }, {
+            inputs: [
+              "dstport"
+            ],
+            output: "dst_endpoint.port",
+            type: "integer"
+          }, {
+            inputs: [
+              "srcintf"
+            ],
+            output: "src_endpoint.interface_name",
+            type: "string"
+          }, {
+            inputs: [
+              "dstintf"
+            ],
+            output: "dst_endpoint.interface_name",
+            type: "string"
+          },
+          {inputs: ["proto"], output: "network.protocol", type: "string"},
+		  {inputs: ["action"], output: "network.action", type: "string"},
+          {inputs: ["sessionid"], output: "network.session_id", type: "string"},
+		  {inputs: ["sentbyte"], output: "network.bytes_out", type: "integer"},
+		  {inputs: ["rcvdbyte"], output: "network.bytes_in", type: "integer"}
+
+
+        
+        ],
+        drops: [
+          "transip",
+          "ocsf_time"
+        ],
+        constants: [
+          {
+            value: 1,
+            field: "severity_id",
+            predicate: "unmapped.level = 'information'"
+          }, {
+            value: 1,
+            field: "severity_id",
+            predicate: "unmapped.level = 'notice'"
+          }, {
+            value: 2,
+            field: "severity_id",
+            predicate: "unmapped.level = 'low'"
+          }, {
+            value: 3,
+            field: "severity_id",
+            predicate: "unmapped.level = 'medium'"
+          }, {
+            value: 4,
+            field: "severity_id",
+            predicate: "unmapped.level = 'high'"
+          }, {
+            value: 5,
+            field: "severity_id",
+            predicate: "unmapped.level = 'critical'"
+          }, {
+            value: 6,
+            field: "severity_id",
+            predicate: "unmapped.level = 'fatal'"
+          }, {
+            value: 2,
+            field: "observables[0].type_id"
+          }, {
+            value: "IP Address",
+            field: "observables[0].type"
+          }, {
+            value: "Source IP Address",
+            field: "observables[0].name"
+          }, {
+            value: 2,
+            field: "observables[1].type_id"
+          }, {
+            value: "IP Address",
+            field: "observables[1].type"
+          }, {
+            value: "Destination IP Address",
+            field: "observables[1].name"
+          }, {
+            value: 4,
+            field: "observables[2].type_id"
+          }, {
+            value: "MAC Address",
+            field: "observables[2].type"
+          }, {
+            value: "Source MAC Address",
+            field: "observables[2].name"
+          }, {
+            value: 4,
+            field: "observables[3].type_id"
+          }, {
+            value: "MAC Address",
+            field: "observables[3].type"
+          }, {
+            value: "Destination MAC Address",
+            field: "observables[3].name"
+          }, {
+            value: 6,
+            field: "activity_id"
+          }, {
+            value: 400106,
+            field: "type_uid"
+          }, {
+            value: 4001,
+            field: "class_uid"
+          }, {
+            value: 4,
+            field: "category_uid"
+          }, {
+            value: "Network Activity",
+            field: "class_name"
+          }, {
+            value: "Network Activity",
+            field: "category_name"
+          }, {
+            value: "Network Activity: Traffic",
+            field: "type_name"
+          }, {
+            value: 0,
+            field: "connection_info.direction_id"
+          }
+        ]
+      }, {
+        predicate: "type='event'",
+        copies: [
+          {
+            inputs: [
+              "subtype"
+            ],
+            output: "event.type",
+            type: "string"
+          }, {
+            inputs: [
+              "subtype"
+            ],
+            output: "activity_name",
+            type: "string"
+          }, {
+            inputs: [
+              "ocsf_time"
+            ],
+            output: "time",
+            type: "int"
+          }, {
+            inputs: [
+              "srcip"
+            ],
+            output: "observables[0].value",
+            type: "string"
+          }, {
+            inputs: [
+              "dstip"
+            ],
+            output: "observables[1].value",
+            type: "string"
+          }, {
+            inputs: [
+              "srcmac"
+            ],
+            output: "observables[2].value",
+            type: "string"
+          }, {
+            inputs: [
+              "dstmac"
+            ],
+            output: "observables[3].value",
+            type: "string"
+          }, {
+            inputs: [
+              "subtype"
+            ],
+            output: "event.type",
+            type: "string",
+            predicate: "subtype='router'",
+            value: "Network"
+          }, {
+            inputs: [
+              "subtype"
+            ],
+            output: "event.type",
+            type: "string",
+            predicate: "subtype='system'",
+            value: "System"
+          }, {
+            inputs: [
+              "subtype"
+            ],
+            output: "event.type",
+            type: "string",
+            predicate: "subtype='user'",
+            value: "User"
+          }, {
+            inputs: [
+              "subtype"
+            ],
+            output: "event.type",
+            type: "string",
+            predicate: "subtype='ha'",
+            value: "Availability"
+          }, {
+            inputs: [
+              "subtype"
+            ],
+            output: "event.type",
+            type: "string",
+            predicate: "subtype='connector'",
+            value: "Application"
+          }, {
+            inputs: [
+              "subtype"
+            ],
+            output: "event.type",
+            type: "string",
+            predicate: "subtype='security-rating'",
+            value: "Security"
+          }
+        
+        ],
+        renames: [
+          {
+            inputs: [
+              "subtype"
+            ],
+            output: "metadata.log_name",
+            type: "string"
+          }, {
+            inputs: [
+              "date"
+            ],
+            output: "unmapped.date",
+            type: "string"
+          }, {
+            inputs: [
+              "devid"
+            ],
+            output: "device.uid",
+            type: "string"
+          }, {
+            inputs: [
+              "devname"
+            ],
+            output: "device.name",
+            type: "string"
+          }, {
+            inputs: [
+              "id"
+            ],
+            output: "unmapped.id",
+            type: "string"
+          }, {
+            inputs: [
+              "bid"
+            ],
+            output: "unmapped.bid",
+            type: "string"
+          }, {
+            inputs: [
+              "dvid"
+            ],
+            output: "unmapped.dvid",
+            type: "string"
+          }, {
+            inputs: [
+              "itime"
+            ],
+            output: "unmapped.itime",
+            type: "string"
+          }, {
+            inputs: [
+              "euid"
+            ],
+            output: "unmapped.euid",
+            type: "string"
+          }, {
+            inputs: [
+              "epid"
+            ],
+            output: "unmapped.epid",
+            type: "string"
+          }, {
+            inputs: [
+              "logid"
+            ],
+            output: "metadata.uid",
+            type: "string"
+          }, {
+            inputs: [
+              "type"
+            ],
+            output: "unmapped.type",
+            type: "string"
+          }, {
+            inputs: [
+              "level"
+            ],
+            output: "unmapped.level",
+            type: "string"
+          }, {
+            inputs: [
+              "vd"
+            ],
+            output: "unmapped.vd",
+            type: "string"
+          }, {
+            inputs: [
+              "eventtime"
+            ],
+            output: "metadata.original_time",
+            type: "string"
+          }, {
+            inputs: [
+              "logdesc"
+            ],
+            output: "unmapped.logdesc",
+            type: "string"
+          }, {
+            inputs: [
+              "msg"
+            ],
+            output: "unmapped.msg",
+            type: "string"
+          }, {
+            inputs: [
+              "dsteuid"
+            ],
+            output: "unmapped.dsteuid",
+            type: "string"
+          }, {
+            inputs: [
+              "dstepid"
+            ],
+            output: "unmapped.dstepid",
+            type: "string"
+          }, {
+            inputs: [
+              "addr"
+            ],
+            output: "unmapped.addr",
+            type: "string"
+          }, {
+            inputs: [
+              "devgrps"
+            ],
+            output: "unmapped.devgrps",
+            type: "string"
+          }, {
+            inputs: [
+              "logver"
+            ],
+            output: "metadata.log_version",
+            type: "string"
+          }, {
+            inputs: [
+              "time"
+            ],
+            output: "unmapped.parsed_time",
+            type: "string"
+          }, {
+            inputs: [
+              "tz"
+            ],
+            output: "timezone_offset",
+            type: "string"
+          }, {
+            inputs: [
+              "evname"
+            ],
+            output: "unmapped.evname",
+            type: "string"
+          }, {
+            inputs: [
+              "ha_role"
+            ],
+            output: "unmapped.ha_role",
+            type: "string"
+          }, {
+            inputs: [
+              "hostname"
+            ],
+            output: "unmapped.hostname",
+            type: "string"
+          }, {
+            inputs: [
+              "sn"
+            ],
+            output: "unmapped.sn",
+            type: "string"
+          }, {
+            inputs: [
+              "logdesc"
+            ],
+            output: "ha.sync_status.description",
+            type: "string"
+          }, {
+            inputs: [
+              "msg"
+            ],
+            output: "ha.sync_status.message",
+            type: "string"
+          }, {
+            inputs: [
+              "logid"
+            ],
+            output: "ha.sync_status.sync_id",
+            type: "string"
+          }, {
+            inputs: [
+              "eventtime"
+            ],
+            output: "ha.sync_status.sync_time",
+            type: "string"
+          }, {
+            inputs: [
+              "auditscore"
+            ],
+            output: "security_rating.score",
+            type: "string"
+          }, {
+            inputs: [
+              "auditreporttype"
+            ],
+            output: "security_rating.report_type",
+            type: "string"
+          }, {
+            inputs: [
+              "auditid"
+            ],
+            output: "security_rating.report_id",
+            type: "string"
+          }, {
+            inputs: [
+              "audittime"
+            ],
+            output: "security_rating.report_time",
+            type: "string"
+          }, {
+            inputs: [
+              "vcluster"
+            ],
+            output: "unmapped.vcluster",
+            type: "string"
+          }, {
+            inputs: [
+              "vcluster_member"
+            ],
+            output: "unmapped.vcluster_member",
+            type: "string"
+          }, {
+            inputs: [
+              "vcluster_state"
+            ],
+            output: "unmapped.vcluster_state",
+            type: "string"
+          }, {
+            inputs: [
+              "eventtype"
+            ],
+            output: "unmapped.eventtype",
+            type: "string"
+          }, {
+            inputs: [
+              "healthcheck"
+            ],
+            output: "unmapped.healthcheck",
+            type: "string"
+          }, {
+            inputs: [
+              "inbandwidth"
+            ],
+            output: "unmapped.inbandwidth",
+            type: "string"
+          }, {
+            inputs: [
+              "interface"
+            ],
+            output: "unmapped.interface",
+            type: "string"
+          }, {
+            inputs: [
+              "jitter"
+            ],
+            output: "unmapped.jitter",
+            type: "string"
+          }, {
+            inputs: [
+              "latency"
+            ],
+            output: "unmapped.latency",
+            type: "string"
+          }, {
+            inputs: [
+              "metric"
+            ],
+            output: "unmapped.metric",
+            type: "string"
+          }, {
+            inputs: [
+              "outbandwidth"
+            ],
+            output: "unmapped.outbandwidth",
+            type: "string"
+          }, {
+            inputs: [
+              "packetloss"
+            ],
+            output: "unmapped.packetloss",
+            type: "string"
+          }, {
+            inputs: [
+              "slamap"
+            ],
+            output: "unmapped.slamap",
+            type: "string"
+          }, {
+            inputs: [
+              "slatargetid"
+            ],
+            output: "unmapped.slatargetid",
+            type: "string"
+          }, {
+            inputs: [
+              "status"
+            ],
+            output: "status_detail",
+            type: "string"
+          }, {
+            inputs: [
+              "bibandwidth"
+            ],
+            output: "unmapped.bibandwidth",
+            type: "string"
+          }, {
+            inputs: [
+              "from"
+            ],
+            output: "unmapped.from",
+            type: "string"
+          }, {
+            inputs: [
+              "stitch"
+            ],
+            output: "unmapped.stitch",
+            type: "string"
+          }, {
+            inputs: [
+              "stitchaction"
+            ],
+            output: "unmapped.stitchaction",
+            type: "string"
+          }, {
+            inputs: [
+              "trigger"
+            ],
+            output: "unmapped.trigger",
+            type: "string"
+          }, {
+            inputs: [
+              "reason"
+            ],
+            output: "unmapped.reason",
+            type: "string"
+          }, {
+            inputs: [
+              "duration"
+            ],
+            output: "unmapped.duration",
+            type: "string"
+          }, {
+            inputs: [
+              "dstip"
+            ],
+            output: "unmapped.dstip",
+            type: "string"
+          }, {
+            inputs: [
+              "srcip"
+            ],
+            output: "unmapped.srcip",
+            type: "string"
+          }, {
+            inputs: [
+              "method"
+            ],
+            output: "unmapped.method",
+            type: "string"
+          }, {
+            inputs: [
+              "cfgattr"
+            ],
+            output: "unmapped.cfgattr",
+            type: "string"
+          }, {
+            inputs: [
+              "cfgpath"
+            ],
+            output: "unmapped.cfgpath",
+            type: "string"
+          }, {
+            inputs: [
+              "cfgtid"
+            ],
+            output: "unmapped.cfgtid",
+            type: "string"
+          }, {
+            inputs: [
+              "used"
+            ],
+            output: "unmapped.used",
+            type: "string"
+          }, {
+            inputs: [
+              "total"
+            ],
+            output: "unmapped.total",
+            type: "string"
+          }, {
+            inputs: [
+              "freediskstorage"
+            ],
+            output: "unmapped.freediskstorage",
+            type: "string"
+          }, {
+            inputs: [
+              "disklograte"
+            ],
+            output: "unmapped.disklograte",
+            type: "string"
+          }, {
+            inputs: [
+              "fazlograte"
+            ],
+            output: "unmapped.fazlograte",
+            type: "string"
+          }, {
+            inputs: [
+              "trate"
+            ],
+            output: "unmapped.trate",
+            type: "string"
+          }, {
+            inputs: [
+              "waninfo"
+            ],
+            output: "unmapped.waninfo",
+            type: "string"
+          }, {
+            inputs: [
+              "ui"
+            ],
+            output: "unmapped.ui",
+            type: "string"
+          }, {
+            inputs: [
+              "setuprate"
+            ],
+            output: "unmapped.setuprate",
+            type: "string"
+          }, {
+            inputs: [
+              "disk"
+            ],
+            output: "unmapped.disk",
+            type: "string"
+          }, {
+            inputs: [
+              "mem"
+            ],
+            output: "unmapped.mem",
+            type: "string"
+          }, {
+            inputs: [
+              "cpu"
+            ],
+            output: "unmapped.cpu",
+            type: "string"
+          }, {
+            inputs: [
+              "sysuptime"
+            ],
+            output: "unmapped.sysuptime",
+            type: "string"
+          }, {
+            inputs: [
+              "authproto"
+            ],
+            output: "unmapped.authproto",
+            type: "string"
+          }, {
+            inputs: [
+              "action"
+            ],
+            output: "unmapped.action",
+            type: "string"
+          }, {
+            inputs: [
+              "group"
+            ],
+            output: "unmapped.group",
+            type: "string"
+          }, {
+            inputs: [
+              "policyid"
+            ],
+            output: "unmapped.policyid",
+            type: "string"
+          }, {
+            inputs: [
+              "user"
+            ],
+            output: "unmapped.user",
+            type: "string"
+          }, {
+            inputs: [
+              "assignip"
+            ],
+            output: "unmapped.assignip",
+            type: "string"
+          }, {
+            inputs: [
+              "cookies"
+            ],
+            output: "unmapped.cookies",
+            type: "string"
+          }, {
+            inputs: [
+              "locip"
+            ],
+            output: "unmapped.locip",
+            type: "string"
+          }, {
+            inputs: [
+              "locport"
+            ],
+            output: "unmapped.locport",
+            type: "string"
+          }, {
+            inputs: [
+              "outintf"
+            ],
+            output: "unmapped.outintf",
+            type: "string"
+          }, {
+            inputs: [
+              "peer_notif"
+            ],
+            output: "unmapped.peer_notif",
+            type: "string"
+          }, {
+            inputs: [
+              "remip"
+            ],
+            output: "unmapped.remip",
+            type: "string"
+          }, {
+            inputs: [
+              "remport"
+            ],
+            output: "unmapped.remport",
+            type: "string"
+          }, {
+            inputs: [
+              "useralt"
+            ],
+            output: "unmapped.useralt",
+            type: "string"
+          }, {
+            inputs: [
+              "vpntunnel"
+            ],
+            output: "unmapped.vpntunnel",
+            type: "string"
+          }, {
+            inputs: [
+              "xauthgroup"
+            ],
+            output: "unmapped.xauthgroup",
+            type: "string"
+          }, {
+            inputs: [
+              "xauthuser"
+            ],
+            output: "unmapped.xauthuser",
+            type: "string"
+          }, {
+            inputs: [
+              "name"
+            ],
+            output: "unmapped.name",
+            type: "string"
+          }, {
+            inputs: [
+              "cert-type"
+            ],
+            output: "unmapped.cert-type",
+            type: "string"
+          }, {
+            inputs: [
+              "age"
+            ],
+            output: "unmapped.age",
+            type: "string"
+          }, {
+            inputs: [
+              "apscan"
+            ],
+            output: "unmapped.apscan",
+            type: "string"
+          }, {
+            inputs: [
+              "apstatus"
+            ],
+            output: "unmapped.apstatus",
+            type: "string"
+          }, {
+            inputs: [
+              "aptype"
+            ],
+            output: "unmapped.aptype",
+            type: "string"
+          }, {
+            inputs: [
+              "bssid"
+            ],
+            output: "unmapped.bssid",
+            type: "string"
+          }, {
+            inputs: [
+              "channel"
+            ],
+            output: "unmapped.channel",
+            type: "string"
+          }, {
+            inputs: [
+              "detectionmethod"
+            ],
+            output: "unmapped.detectionmethod",
+            type: "string"
+          }, {
+            inputs: [
+              "encryption"
+            ],
+            output: "unmapped.encryption",
+            type: "string"
+          }, {
+            inputs: [
+              "live"
+            ],
+            output: "unmapped.live",
+            type: "string"
+          }, {
+            inputs: [
+              "manuf"
+            ],
+            output: "unmapped.manuf",
+            type: "string"
+          }, {
+            inputs: [
+              "noise"
+            ],
+            output: "unmapped.noise",
+            type: "string"
+          }, {
+            inputs: [
+              "onwire"
+            ],
+            output: "unmapped.onwire",
+            type: "string"
+          }, {
+            inputs: [
+              "radioband"
+            ],
+            output: "unmapped.radioband",
+            type: "string"
+          }, {
+            inputs: [
+              "radioidclosest"
+            ],
+            output: "unmapped.radioidclosest",
+            type: "string"
+          }, {
+            inputs: [
+              "radioiddetected"
+            ],
+            output: "unmapped.radioiddetected",
+            type: "string"
+          }, {
+            inputs: [
+              "rate"
+            ],
+            output: "unmapped.rate",
+            type: "string"
+          }, {
+            inputs: [
+              "security"
+            ],
+            output: "unmapped.security",
+            type: "string"
+          }, {
+            inputs: [
+              "signal"
+            ],
+            output: "unmapped.signal",
+            type: "string"
+          }, {
+            inputs: [
+              "snclosest"
+            ],
+            output: "unmapped.snclosest",
+            type: "string"
+          }, {
+            inputs: [
+              "sndetected"
+            ],
+            output: "unmapped.sndetected",
+            type: "string"
+          }, {
+            inputs: [
+              "ssid"
+            ],
+            output: "unmapped.ssid",
+            type: "string"
+          }, {
+            inputs: [
+              "stacount"
+            ],
+            output: "unmapped.stacount",
+            type: "string"
+          }, {
+            inputs: [
+              "stamac"
+            ],
+            output: "unmapped.stamac",
+            type: "string"
+          }, {
+            inputs: [
+              "userfrom"
+            ],
+            output: "unmapped.userfrom",
+            type: "string"
+          }, {
+            inputs: [
+              "operation"
+            ],
+            output: "api.operation",
+            type: "string"
+          }, {
+            inputs: [
+              "changes"
+            ],
+            output: "unmapped.changes",
+            type: "string"
+          }, {
+            inputs: [
+              "desc"
+            ],
+            output: "unmapped.desc",
+            type: "string"
+          }, {
+            inputs: [
+              "srcip"
+            ],
+            output: "src_endpoint.ip",
+            type: "string"
+          }, {
+            inputs: [
+              "mac"
+            ],
+            output: "src_endpoint.mac",
+            type: "string"
+          }, {
+            inputs: [
+              "src_int"
+            ],
+            output: "src_endpoint.interface_name",
+            type: "string"
+          }, {
+            inputs: [
+              "dstip"
+            ],
+            output: "dst_endpoint.ip",
+            type: "string"
+          }, {
+            inputs: [
+              "dstmac"
+            ],
+            output: "dst_endpoint.mac",
+            type: "string"
+          }, {
+            inputs: [
+              "user"
+            ],
+            output: "actor.user.name",
+            type: "string"
+          }
+        
+        
+        ],
+        drops: [
+          "ocsf_time"
+        ],
+        constants: [
+          {
+            value: 99,
+            field: "activity_id"
+          }, {
+            value: 99,
+            field: "type_uid"
+          }, {
+            value: 0,
+            field: "class_uid"
+          }, {
+            value: 0,
+            field: "category_uid"
+          }, {
+            value: "Base Event",
+            field: "class_name"
+          }, {
+            value: "Uncategorized",
+            field: "category_name"
+          }, {
+            value: "Base Event: Other",
+            field: "type_name"
+          }, {
+            value: 1,
+            field: "severity_id",
+            predicate: "unmapped.level = 'information'"
+          }, {
+            value: 1,
+            field: "severity_id",
+            predicate: "unmapped.level = 'notice'"
+          }, {
+            value: 2,
+            field: "severity_id",
+            predicate: "unmapped.level = 'low'"
+          }, {
+            value: 3,
+            field: "severity_id",
+            predicate: "unmapped.level = 'medium'"
+          }, {
+            value: 4,
+            field: "severity_id",
+            predicate: "unmapped.level = 'high'"
+          }, {
+            value: 5,
+            field: "severity_id",
+            predicate: "unmapped.level = 'critical'"
+          }, {
+            value: 6,
+            field: "severity_id",
+            predicate: "unmapped.level = 'fatal'"
+          }
+        ]
+      }
+    ]
+  }
+}
