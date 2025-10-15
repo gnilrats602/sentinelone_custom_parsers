@@ -1,0 +1,140 @@
+{
+    attributes: {
+        "dataSource.category": "security",
+        "dataSource.name": "Cisco Meraki MX Firewall",
+        "dataSource.vendor": "Cisco",
+        "dataSource.technology": "firewall",
+        "metadata.version": "1.0.0",
+    },
+    formats: [
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ $event.type$ src=$src.ip$:$sport$ dst=$dst.ip$:$dport$ mac=$dst_endpoint.mac_addr$ request: $request$ $url$",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            halt: true
+        },
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ $event.type$ .*",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            repeat: true,        },
+        { format: ".*$_=identifier$=$_=quoteOrSpace$", repeat: true },
+        { format: ".*pattern: $event.outcome$", repeat: true },
+        { format: ".*request: $network.http.request_method$ $network.http.url$", repeat: true },
+        { format: ".*msg= '$vpn_raw$'", repeat: true }
+    ],
+    mappings: {
+        version: 0,
+        mappings: [
+            {
+                predicate: "event.type='vpn_firewall'",
+                constants: {
+                    activity_id: 4,
+                    class_uid: 1000,
+                    class_name: "Network Activity",
+                    type_uid: 1002,
+                    type_name: "Firewall",
+                    category_uid: 1,
+                    category_name: "Network"
+                },
+                copies: [
+                    { inputs: ["src"], output: "src.ip", type: "ip" },
+                    { inputs: ["dst"], output: "dst.ip", type: "ip" },
+                    { inputs: ["sport"], output: "src.port", type: "integer" },
+                    { inputs: ["dport"], output: "dst.port", type: "integer" },
+                    { inputs: ["mac"], output: "dst.mac", type: "mac" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["dst.ip"], output: "event.target", type: "ip" },
+                    { inputs: ["event.outcome"], output: "event.details", type: "string" }
+                ],
+            },
+            {
+                predicate: "event.type='l7_firewall'",
+                constants: {
+                    activity_id: 4,
+                    class_uid: 1000,
+                    class_name: "Network Activity",
+                    type_uid: 1003,
+                    type_name: "Firewall Decision",
+                    category_uid: 1,
+                    category_name: "Network"
+                },
+                copies: [
+                    { inputs: ["src"], output: "src.ip", type: "ip" },
+                    { inputs: ["dst"], output: "dst.ip", type: "ip" },
+                    { inputs: ["sport"], output: "src.port", type: "integer" },
+                    { inputs: ["dport"], output: "dst.port", type: "integer" },
+                    { inputs: ["mac"], output: "dst.mac", type: "mac" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["dst.ip"], output: "event.target", type: "ip" },
+                    { inputs: ["decision"], output: "event.details", type: "string" }
+                ],
+            },
+            {
+                predicate: "event.type='events' and type='anyconnect_vpn_session_manager'",
+                constants: {
+                    activity_id: 4,
+                    class_uid: 1004,
+                    class_name: "VPN",
+                    type_uid: 1009,
+                    type_name: "VPN Session",
+                    category_uid: 1,
+                    category_name: "Network"
+                },
+                copies: [
+                    { inputs: ["src"], output: "src.ip", type: "ip" },
+                    { inputs: ["dst"], output: "dst.ip", type: "ip" },
+                    { inputs: ["sport"], output: "src.port", type: "integer" },
+                    { inputs: ["dport"], output: "dst.port", type: "integer" },
+                    { inputs: ["mac"], output: "dst.mac", type: "mac" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["dst.ip"], output: "event.target", type: "ip" },
+                    { inputs: ["decision"], output: "event.details", type: "string" },
+                    { inputs: ["vpn_raw"], output: "vpn.user", type: "string", match: "User\\[([^\\]]+)]", replace: "$1" }
+                ],
+            },
+            {
+                predicate: "event.type='bridge_anyconnect_client_vpn_firewall'",
+                constants: {
+                    activity_id: 4,
+                    class_uid: 1000,
+                    class_name: "Network Activity",
+                    type_uid: 1004,
+                    type_name: "VPN",
+                    category_uid: 1,
+                    category_name: "Network"
+                },
+                copies: [
+                    { inputs: ["src"], output: "src.ip", type: "ip" },
+                    { inputs: ["dst"], output: "dst.ip", type: "ip" },
+                    { inputs: ["sport"], output: "src.port", type: "integer" },
+                    { inputs: ["dport"], output: "dst.port", type: "integer" },
+                    { inputs: ["mac"], output: "dst.mac", type: "mac" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["dst.ip"], output: "event.target", type: "ip" },
+                    { inputs: ["event.outcome"], output: "event.details", type: "string" }
+                ]
+            },
+            {
+                predicate: "event.type='urls'",
+                constants: {
+                    activity_id: 4,
+                    class_uid: 1001,
+                    class_name: "Web Activity",
+                    type_uid: 1006,
+                    type_name: "Web Request",
+                    category_uid: 2,
+                    category_name: "Application",
+                    "event.details": "Web request observed by firewall"
+                },
+                copies: [
+                    { inputs: ["dst_endpoint.mac_addr"], output: "dst.mac", type: "mac" },
+                    { inputs: ["sport"], output: "src.port", type: "integer" },
+                    { inputs: ["dport"], output: "dst.port", type: "integer" },
+                    { inputs: ["request"], output: "network.http.request_method", type: "string" },
+                    { inputs: ["url"], output: "network.http.url", type: "string" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["network.http.url"], output: "event.target", type: "string" },
+                ]
+            },
+        ]
+    }
+}
