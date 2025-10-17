@@ -3,8 +3,6 @@
         "dataSource.category": "security",
         "dataSource.name": "Cisco Meraki MX Firewall",
         "dataSource.vendor": "Cisco",
-        "dataSource.technology": "firewall",
-        "metadata.version": "1.0.0",
     },
     formats: [
         {
@@ -12,14 +10,60 @@
             rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
             halt: true
         },
+       {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ events type=$event.type$ msg= '$auth_source$\\[$radius_id$\\] Server IP=$server_ip$ Server port=$server_port$ Peer IP=$peer_ip$ Peer port=$peer_port$ User=$vpn_user$: $auth_result$.'",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            halt: true
+        },
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ events type=$event.type$ msg= '$auth_source$\\[$radius_id$\\] Server IP=$server_ip$ Server port=$server_port$ Peer IP=$peer_ip$ Peer port=$peer_port$: $auth_result$.'",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            halt: true
+        },
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ events type=$event.type$ msg= '$auth_source$\\[$radius_id$\\] Server IP=$server_ip$ Server port=$server_port$ Peer IP=$peer_ip$ Peer port=$peer_port$: $status$\\. $auth_result$.'",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            halt: true
+        },
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ events type=$event.type$ msg= '$auth_source$\\[$radius_id$\\] Server IP=$server_ip$ Server port=$server_port$: $status$: $auth_result$ '",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            halt: true
+        },
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ events $event.type$ user id $actor_user=quotable$ local ip $dst.ip.address$ connected from $src.ip.address$",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            halt: true
+        },
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ events type=$event.type$ msg= 'Sess-ID\\[$session_id$\\] Peer IP=$peer_ip$ User\\[$actor_user$\\]: $activity$. Reason: $reason$'",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            halt: true
+        },
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ events type=$event.type$ msg= 'Peer IP=$peer_ip$ User\\[$actor_user$\\] Sess-ID\\[$session_id$\\]: $activity$ '",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            halt: true
+        },
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ events type=$event.type$ msg=$vpn_msg$",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            repeat: true
+        },
+        {
+            format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ events $event.type$ msg=$vpn_msg$",
+            rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
+            repeat: true
+        },
         {
             format: "<$syslog_priority$>$syslog_version$ $unix.time$ $device.hostname$ $event.type$ .*",
             rewrites: [ { input: "unix.time", output: "timestamp", match: "^(\\d+)\\.(\\d+)$", replace: "." } ],
             repeat: true,        },
         { format: ".*$_=identifier$=$_=quoteOrSpace$", repeat: true },
-        { format: ".*pattern: $event.outcome$", repeat: true },
+        { format: ".*pattern: $event.outcome.reason$", repeat: true },
         { format: ".*request: $network.http.request_method$ $network.http.url$", repeat: true },
-        { format: ".*msg= '$vpn_raw$'", repeat: true }
+        //{ format: ".*msg= '$vpn_raw$'", repeat: true },
+
     ],
     mappings: {
         version: 0,
@@ -69,26 +113,133 @@
                 ],
             },
             {
-                predicate: "event.type='events' and type='anyconnect_vpn_session_manager'",
+                predicate: "event.type='anyconnect_vpn_session_manager'",
                 constants: {
-                    activity_id: 4,
-                    class_uid: 1004,
-                    class_name: "VPN",
-                    type_uid: 1009,
-                    type_name: "VPN Session",
-                    category_uid: 1,
-                    category_name: "Network"
+                    "activity_id": 3,
+                    "class_uid": 3003,
+                    "class_name": "Network Session",
+                    "type_uid": 300300,
+                    "type_name": "Network Session - Created",
+                    "category_uid": 1,
+                    "category_name": "Network Activity",
+                    "metadata.event_class": "network_activity",
+                    "metadata.event_type": "network_connection",
+                    "metadata.event_name": "Network Session - Created",
+                    "event.details": "Network Session - Created",
+                    "metadata.severity": "info",
                 },
                 copies: [
-                    { inputs: ["src"], output: "src.ip", type: "ip" },
-                    { inputs: ["dst"], output: "dst.ip", type: "ip" },
-                    { inputs: ["sport"], output: "src.port", type: "integer" },
-                    { inputs: ["dport"], output: "dst.port", type: "integer" },
-                    { inputs: ["mac"], output: "dst.mac", type: "mac" },
+                    { inputs: ["peer_ip"], output: "actor.ip", type: "ip" },
+                    { inputs: ["peer_port"], output: "actor.port", type: "integer" },
+                    { inputs: ["server_ip"], output: "target.ip", type: "ip" },
+                    { inputs: ["server_port"], output: "target.port", type: "integer" },
                     { inputs: ["device.hostname"], output: "event.source", type: "string" },
                     { inputs: ["dst.ip"], output: "event.target", type: "ip" },
-                    { inputs: ["decision"], output: "event.details", type: "string" },
-                    { inputs: ["vpn_raw"], output: "vpn.user", type: "string", match: "User\\[([^\\]]+)]", replace: "$1" }
+                    { inputs: ["auth_result"], output: "event.details", type: "string" },
+                    { inputs: ["vpn_user"], output: "actor.user.name", type: "string" },
+                ],
+            },
+            {
+                predicate: "event.type='anyconnect_vpn_auth_success'",
+                constants: {
+                    "activity_id": 4,
+                    "class_uid": 1001,
+                    "class_name": "Authentication",
+                    "type_uid": 100101,
+                    "type_name": "Authentication",
+                    "category_uid": 1,
+                    "category_name": "Network",
+                    "metadata.event_class": "authentication",
+                    "metadata.event_type": "authentication",
+                    "metadata.event_name": "Authentication - Success",
+                    "metadata.severity": "info",
+                    "event.outcome": "success"
+                },
+                copies: [
+                    { inputs: ["peer_ip"], output: "actor.ip", type: "ip" },
+                    { inputs: ["peer_port"], output: "actor.port", type: "integer" },
+                    { inputs: ["server_ip"], output: "target.ip", type: "ip" },
+                    { inputs: ["server_port"], output: "target.port", type: "integer" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["dst.ip"], output: "event.target", type: "ip" },
+                    { inputs: ["auth_result"], output: "event.details", type: "string" },
+                    { inputs: ["vpn_user"], output: "actor.user.name", type: "string" },
+                ],
+            },
+            {
+                predicate: "event.type='anyconnect_vpn_auth_failure'",
+                constants: {
+                    "activity_id": 4,
+                    "class_uid": 1001,
+                    "class_name": "VPN",
+                    "type_uid": 100100,
+                    "type_name": "Authentication",
+                    "category_uid": 1,
+                    "category_name": "Authentication",
+                    "metadata.event_class": "authentication",
+                    "metadata.event_type": "authentication",
+                    "metadata.event_name": "Authentication - Failure",
+                    "metadata.severity": "info",
+                    "event.outcome": "failure"
+                },
+                copies: [
+                    { inputs: ["peer_ip"], output: "actor.ip", type: "ip" },
+                    { inputs: ["peer_port"], output: "actor.port", type: "integer" },
+                    { inputs: ["server_ip"], output: "target.ip", type: "ip" },
+                    { inputs: ["server_port"], output: "target.port", type: "integer" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["dst.ip"], output: "event.target", type: "ip" },
+                    { inputs: ["auth_result"], output: "event.details", type: "string" },
+                    { inputs: ["vpn_user"], output: "actor.user.name", type: "string" },
+                ],
+            },
+            {
+                predicate: "event.type='anyconnect_vpn_connect'",
+                constants: {
+                    "activity_id": 1,
+                    "class_uid": 3001,
+                    "class_name": "Network Connection",
+                    "type_uid": 300100,
+                    "type_name": "Network Connection - Success",
+                    "category_uid": 3,
+                    "category_name": "Network Activity",
+                    "metadata.event_class": "network_activity",
+                    "metadata.event_type": "network_connection",
+                    "metadata.event_name": "VPN Connection - Established",
+                    "event.details": "VPN Connection - Established",
+                    "metadata.severity": "info",
+                    "event.outcome": "success"
+                },
+                copies: [
+                    { inputs: ["src.ip.address"], output: "actor.ip", type: "ip" },
+                    { inputs: ["dst.ip.address"], output: "target.ip", type: "ip" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["target.ip"], output: "event.target", type: "ip" },
+                    { inputs: ["vpn_user"], output: "actor.user.name", type: "string" },
+                ],
+            },
+            {
+                predicate: "event.type='anyconnect_vpn_disconnect'",
+                constants: {
+                    "activity_id": 1,
+                    "class_uid": 3001,
+                    "class_name": "Network Connection",
+                    "type_uid": 300101,
+                    "type_name": "Network Connection - Termination",
+                    "category_uid": 3,
+                    "category_name": "Network Activity",
+                    "metadata.event_class": "network_activity",
+                    "metadata.event_type": "network_connection",
+                    "metadata.event_name": "VPN Connection - Terminated",
+                    "event.details": "VPN Connection - Terminated",
+                    "metadata.severity": "info"
+                },
+                copies: [
+                    { inputs: ["src.ip.address"], output: "actor.ip", type: "ip" },
+                    { inputs: ["dst.ip.address"], output: "target.ip", type: "ip" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["target.ip"], output: "event.target", type: "ip" },
+                    { inputs: ["vpn_user"], output: "actor.user.name", type: "string" },
                 ],
             },
             {
@@ -112,6 +263,50 @@
                     { inputs: ["dst.ip"], output: "event.target", type: "ip" },
                     { inputs: ["event.outcome"], output: "event.details", type: "string" }
                 ]
+            },
+            {
+                predicate: "event.type='firewall'",
+                constants: {
+                    activity_id: 3,
+                    class_uid: 3002,
+                    class_name: "Network Traffic",
+                    type_uid: 300200,
+                    type_name: "Network Traffic - Observed",
+                    category_uid: 3,
+                    category_name: "Network Activity"
+                },
+                copies: [
+                    { inputs: ["src"], output: "actor.ip", type: "ip" },
+                    { inputs: ["dst"], output: "target.ip", type: "ip" },
+                    { inputs: ["sport"], output: "actor.port", type: "integer" },
+                    { inputs: ["dport"], output: "target.port", type: "integer" },
+                    { inputs: ["protocol"], output: "network.protocol", type: "string" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["dst"], output: "event.target", type: "ip" },
+                    { inputs: ["event.outcome"], output: "event.details", type: "string" }
+                ]
+            },
+            {
+                predicate: "event.type='events'",
+                constants: {
+                    activity_id: 4,
+                    class_uid: 1004,
+                    class_name: "VPN",
+                    type_uid: 1009,
+                    type_name: "VPN Session",
+                    category_uid: 1,
+                    category_name: "Network"
+                },
+                copies: [
+                    { inputs: ["src"], output: "src.ip", type: "ip" },
+                    { inputs: ["dst"], output: "dst.ip", type: "ip" },
+                    { inputs: ["sport"], output: "src.port", type: "integer" },
+                    { inputs: ["dport"], output: "dst.port", type: "integer" },
+                    { inputs: ["mac"], output: "dst.mac", type: "mac" },
+                    { inputs: ["device.hostname"], output: "event.source", type: "string" },
+                    { inputs: ["dst.ip"], output: "event.target", type: "ip" },
+                    { inputs: ["decision"], output: "event.details", type: "string" },
+                ],
             },
             {
                 predicate: "event.type='urls'",
