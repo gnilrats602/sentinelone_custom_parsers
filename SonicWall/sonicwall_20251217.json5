@@ -2,12 +2,8 @@
   attributes: {
     "dataSource.category": "security",
     "dataSource.name": "Sonicwall",
-    "dataSource.vendor": "Dell",
-    // OCSF-ish defaults (can be overridden by KV fields below if present)
-    "class_uid": 4001, // Network Activity (most SonicWall traffic logs)
-    "category_uid": 4, // Network
+    "dataSource.vendor": "Dell"
   },
-  timezone: "GMT-0500",
   patterns: {
     // Date/time primitives
     "dateString": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
@@ -57,11 +53,6 @@
     {
       format: ".*\\bdst=$dst_ipv4$:$dst_port$:$dst_interface$\\b .*",
       repeat: false,
-      mappings: {
-        "dst_ipv4": "connection_info.dst_ip",
-        "dst_port": "connection_info.dst_port",
-        "dst_interface": "connection_info.dst_interface"
-      }
     },
     {
       format: ".*\\bsrc=$src_ipv4$:$src_port$:$src_interface$\\b .*",
@@ -82,6 +73,14 @@
         "nat_src_ipv4": "connection_info.nat_src_ip",
         "nat_src_port": "connection_info.nat_src_port"
       }
+    },
+    {
+      format: ".*\\bmsg=\"Initiator from country blocked: Initiator IP:$initiator$ Country Name:$country_name$\".*",
+      repeat: false,
+      mappings: {
+        "initiator": "connection_info.initiator_ip",
+        "country_name": "src_endpoint.location.country",
+    	}
     },
     {
       format: ".*msg=$_=quoteOrSpace$.*",
@@ -116,6 +115,31 @@
     version: 0,
     mappings: [
       {
+        "predicate": "true",
+        "repeat": true,
+        "constants": [
+          // Map Syslog pri (0..7) to your desired severity_id values
+          { value: 7, field: "severity_id", predicate: "pri = 0" },  // Emergency
+          { value: 6, field: "severity_id", predicate: "pri = 1" },  // Alert
+          { value: 5, field: "severity_id", predicate: "pri = 2" },  // Critical
+          { value: 4, field: "severity_id", predicate: "pri = 3" },  // Error
+          { value: 3, field: "severity_id", predicate: "pri = 4" },  // Warning
+          { value: 2, field: "severity_id", predicate: "pri = 5" },  // Notice
+          { value: 1, field: "severity_id", predicate: "pri = 6" },  // Informational
+          { value: 0, field: "severity_id", predicate: "pri = 7" },  // Debug
+
+          // (Optional) textual severity for convenience
+          { value: "Emergency",     field: "severity", predicate: "pri = 0" },
+          { value: "Alert",         field: "severity", predicate: "pri = 1" },
+          { value: "Critical",      field: "severity", predicate: "pri = 2" },
+          { value: "Error",         field: "severity", predicate: "pri = 3" },
+          { value: "Warning",       field: "severity", predicate: "pri = 4" },
+          { value: "Notice",        field: "severity", predicate: "pri = 5" },
+          { value: "Informational", field: "severity", predicate: "pri = 6" },
+          { value: "Debug",         field: "severity", predicate: "pri = 7" }
+        ]
+      },
+      {
         predicate: "msg='Connection Closed'",
         copies: [
           {inputs: ["msg"], output: "event.type", type: "String"},
@@ -124,18 +148,15 @@
           {inputs: ["usr"], output: "actor.user.name", type:  "String"}
         ],
         renames: [
-          {inputs: ["proto"], output: "network.protocol", type: "String"}
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
         ],
         constants: [
-          {value: 7, field: "pri", predicate: "unmapped.level = 'debug'"},
-          {value: 6, field: "pri", predicate: "unmapped.level = 'informational'"},
-          {value: 5, field: "pri", predicate: "unmapped.level = 'low'"},
-          {value: 4, field: "pri", predicate: "unmapped.level = 'medium'"},
-          {value: 3, field: "pri", predicate: "unmapped.level = 'high'"},
-          {value: 2, field: "pri", predicate: "unmapped.level = 'critical'"},
-          {value: 1, field: "pri", predicate: "unmapped.level = 'fatal'"},
-          {value: 0, field: "pri", predicate: "unmapped.level = 'fatal'"},
-          {value: 99, field: "pri", predicate: "unmapped.level = 'other'"},
           {value: 2, field: "activity_id"},
           {value: 400102, field: "type_uid"},
           {value: 4001, field: "class_uid"},
@@ -154,18 +175,15 @@
           {inputs: ["usr"], output: "actor.user.name", type:  "String"}
         ],
         renames: [
-          {inputs: ["proto"], output: "network.protocol", type: "String"}
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
         ],
         constants: [
-          {value: 7, field: "pri", predicate: "unmapped.level = 'debug'"},
-          {value: 6, field: "pri", predicate: "unmapped.level = 'informational'"},
-          {value: 5, field: "pri", predicate: "unmapped.level = 'low'"},
-          {value: 4, field: "pri", predicate: "unmapped.level = 'medium'"},
-          {value: 3, field: "pri", predicate: "unmapped.level = 'high'"},
-          {value: 2, field: "pri", predicate: "unmapped.level = 'critical'"},
-          {value: 1, field: "pri", predicate: "unmapped.level = 'fatal'"},
-          {value: 0, field: "pri", predicate: "unmapped.level = 'fatal'"},
-          {value: 99, field: "pri", predicate: "unmapped.level = 'other'"},
           {value: 1, field: "activity_id"},
           {value: 400101, field: "type_uid"},
           {value: 4001, field: "class_uid"},
@@ -184,20 +202,15 @@
           {inputs: ["usr"], output: "actor.user.name", type:  "String"}
         ],
         renames: [
-          {inputs: ["proto"], output: "network.protocol", type: "String"}
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
         ],
         constants: [
-          {value: 7, field: "pri", predicate: "unmapped.level = 'debug'"},
-          {value: 6, field: "pri", predicate: "unmapped.level = 'informational'"},
-          {value: 5, field: "pri", predicate: "unmapped.level = 'low'"},
-          {value: 4, field: "pri", predicate: "unmapped.level = 'medium'"},
-          {value: 3, field: "pri", predicate: "unmapped.level = 'high'"},
-          {value: 2, field: "pri", predicate: "unmapped.level = 'critical'"},
-          {value: 1, field: "pri", predicate: "unmapped.level = 'fatal'"},
-          {value: 0, field: "pri", predicate: "unmapped.level = 'fatal'"},
-          {value: 99, field: "pri", predicate: "unmapped.level = 'other'"},
-
-
           {value: 1, field: "activity_id"},
           {value: 400201, field: "type_uid"},
           {value: 4002, field: "class_uid"},
@@ -216,16 +229,15 @@
           {inputs: ["usr"], output: "actor.user.name", type:  "String"}
         ],
         renames: [
-          {inputs: ["proto"], output: "network.protocol", type: "String"}
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
         ],
         constants: [
-          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
-          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
-          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
-          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
-          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
-          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
-          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
           {value: 2, field: "status_id"},
           {value: 6, field: "activity_id"},
           {value: 401306, field: "type_uid"},
@@ -245,16 +257,15 @@
           {inputs: ["usr"], output: "actor.user.name", type:  "String"}
         ],
         renames: [
-          {inputs: ["proto"], output: "network.protocol", type: "String"}
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
         ],
         constants: [
-          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
-          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
-          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
-          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
-          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
-          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
-          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
           {value: 2, field: "status_id"},
           {value: 6, field: "activity_id"},
           {value: 401306, field: "type_uid"},
@@ -274,16 +285,15 @@
           {inputs: ["usr"], output: "actor.user.name", type:  "String"}
         ],
         renames: [
-          {inputs: ["proto"], output: "network.protocol", type: "String"}
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
         ],
         constants: [
-          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
-          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
-          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
-          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
-          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
-          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
-          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
           {value: 1, field: "status_id"},
           {value: 3, field: "activity_id"},
           {value: 401303, field: "type_uid"},
@@ -303,16 +313,15 @@
           {inputs: ["usr"], output: "actor.user.name", type:  "String"}
         ],
         renames: [
-          {inputs: ["proto"], output: "network.protocol", type: "String"}
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
         ],
         constants: [
-          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
-          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
-          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
-          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
-          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
-          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
-          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
           {value: 1, field: "status_id"},
           {value: 1, field: "activity_id"},
           {value: "Create", field: "activity_name"},
@@ -334,16 +343,15 @@
           {inputs: ["usr"], output: "event.login.userName", type:  "String"}
         ],
         renames: [
-          {inputs: ["proto"], output: "network.protocol", type: "String"}
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
         ],
         constants: [
-          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
-          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
-          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
-          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
-          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
-          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
-          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
           {value: 2, field: "status_id"},
           {value: 1, field: "activity_id"},
           {value: "Logon", field: "activity_name"},
@@ -369,15 +377,11 @@
           {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
 		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
 		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
         ],
         constants: [
-          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
-          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
-          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
-          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
-          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
-          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
-          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
           {value: 1, field: "status_id"},
           {value: 5, field: "activity_id"},
           {value: "Refuse", field: "activity_name"},
@@ -388,7 +392,7 @@
           {value: "Network Activity", field: "category_name"},
           {value: "Network Activity: Refuse", field: "type_name"}
         ]
-      }
+      },
     ]
   }
 }
