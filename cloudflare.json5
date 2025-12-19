@@ -1,0 +1,19 @@
+{
+  "attributes": {
+    "dataSource.category": "network",
+    "dataSource.name": "Cloudflare Logpush",
+    "dataSource.vendor": "Cloudflare"
+  },
+  "formats": [
+    {
+      "format": {
+        "type": "delimited",
+        "delimiter": ",",
+        "lineDelimiter": "\\n",
+        "quoteChar": "\"", // If fields are enclosed in double quotes
+        "escapeChar": "\\\\", // Escapes backslashes correctly
+        "hasHeader": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,394 @@
+{
+  attributes: {
+    "dataSource.category": "security",
+    "dataSource.name": "Sonicwall",
+    "dataSource.vendor": "Dell",
+    // OCSF-ish defaults (can be overridden by KV fields below if present)
+    "class_uid": 4001, // Network Activity (most SonicWall traffic logs)
+    "category_uid": 4, // Network
+  },
+  timezone: "GMT-0500",
+  patterns: {
+    // Date/time primitives
+    "dateString": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
+    "timeString": "[0-9]{2}:[0-9]{2}:[0-9]{2}",
+    // Combined timestamp (common SonicWall time="YYYY-MM-DD HH:MM:SS")
+    "timestamp": "$dateString$ $timeString$",
+    // Networking primitives
+    "ipv4": "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}",
+    "port": "[0-9]{1,5}",
+    "interface": "[A-Za-z0-9]+", // e.g., X0, X1, etc.
+    // Composites
+    "ipOnly": "$ipv4$",
+    "ipPort": "$ipv4$:$port$",
+    "ipPortIntf": "$ipv4$:$port$:$interface$",
+    "syslog_priority": "[0-9]{1,3}",
+    "month": "[A-Z][a-z]{2}",
+    "day": "[0-9]{1,2}",
+    "hostname": "[A-Za-z0-9\\-]+",
+    "isoTimestamp": "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}",
+    "id": "[0-9]+",
+    "user": "[^\\\"]+",
+    "resourceType": "[^\\\"]*",
+    "action": "[^\\\"]+",
+    "clientIp": "[^\\\"]*",
+    "appliance": "[^\\\"]+",
+    "status": "[^\\\"]+"
+  },
+  formats: [
+    {
+      "format": "<$syslog_priority$>",
+      "repeat": false
+    },
+    {
+      "format": ".*time=\"$timestamp$\".*",
+      "repeat": false,
+      mappings: {
+        "timestamp": "event.time"  // Direct map to OCSF time (will be adjusted by timezone)
+      }
+    },
+    {
+      format: ".*appName='$appName$' .*",
+      repeat: false,
+      mappings: {
+        "appName": "application.name"  // temporary capture for appname
+      }
+    },
+    {
+      format: ".*\\bdst=$dst_ipv4$:$dst_port$:$dst_interface$\\b .*",
+      repeat: false,
+      mappings: {
+        "dst_ipv4": "connection_info.dst_ip",
+        "dst_port": "connection_info.dst_port",
+        "dst_interface": "connection_info.dst_interface"
+      }
+    },
+    {
+      format: ".*\\bsrc=$src_ipv4$:$src_port$:$src_interface$\\b .*",
+      repeat: false,
+    },
+    {
+      format: ".*\\bnatDst=$nat_dst_ipv4$:$nat_dst_port$\\b .*",
+      repeat: false,
+      mappings: {
+        "nat_dst_ipv4": "connection_info.nat_dst_ip",
+        "nat_dst_port": "connection_info.nat_dst_port"
+      }
+    },
+    {
+      format: ".*\\bnatSrc=$nat_src_ipv4$:$nat_src_port$\\b .*",
+      repeat: false,
+      mappings: {
+        "nat_src_ipv4": "connection_info.nat_src_ip",
+        "nat_src_port": "connection_info.nat_src_port"
+      }
+    },
+    {
+      format: ".*msg=$_=quoteOrSpace$.*",
+      repeat: false,
+      mappings: {
+        "msg": "event.type"
+      }
+    },
+    {
+      format: ".*$_=identifier$=$_=quoteOrSpace$.*",
+      repeat: true,
+      mappings: {
+        // Specific OCSF mappings (case-sensitive to SonicWall keys)
+        "src": "connection_info.src_ip", // Or handle src=ip:port below if needed
+        "dst": "connection_info.dst_ip",
+        "srcport": "connection_info.src_port",
+        "dstport": "connection_info.dst_port",
+        "proto": "connection_info.protocol_name", // e.g., tcp, udp
+        "sent": "connection_info.bytes_sent",
+        "rcvd": "connection_info.bytes_received",
+        "m": "activity_id", // Event code; map to OCSF enums (e.g., 1=Allow, 2=Drop)
+        "c": "category_uid", // SonicWall category code
+        "rule": "firewall_rule.name",
+        "srcZone": "src_zone.name",
+        "dstZone": "dst_zone.name",
+        "usr": "user.name",
+        "app": "application.name"
+      },
+    },
+  ],
+  mappings: {
+    version: 0,
+    mappings: [
+      {
+        predicate: "msg='Connection Closed'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"}
+        ],
+        constants: [
+          {value: 7, field: "pri", predicate: "unmapped.level = 'debug'"},
+          {value: 6, field: "pri", predicate: "unmapped.level = 'informational'"},
+          {value: 5, field: "pri", predicate: "unmapped.level = 'low'"},
+          {value: 4, field: "pri", predicate: "unmapped.level = 'medium'"},
+          {value: 3, field: "pri", predicate: "unmapped.level = 'high'"},
+          {value: 2, field: "pri", predicate: "unmapped.level = 'critical'"},
+          {value: 1, field: "pri", predicate: "unmapped.level = 'fatal'"},
+          {value: 0, field: "pri", predicate: "unmapped.level = 'fatal'"},
+          {value: 99, field: "pri", predicate: "unmapped.level = 'other'"},
+          {value: 2, field: "activity_id"},
+          {value: 400102, field: "type_uid"},
+          {value: 4001, field: "class_uid"},
+          {value: 4, field: "category_uid"},
+          {value: "Network Activity", field: "class_name"},
+          {value: "Network Activity", field: "category_name"},
+          {value: "Network Activity: Close", field: "type_name"}
+        ]
+      },
+      {
+        predicate: "msg='Connection Opened'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"}
+        ],
+        constants: [
+          {value: 7, field: "pri", predicate: "unmapped.level = 'debug'"},
+          {value: 6, field: "pri", predicate: "unmapped.level = 'informational'"},
+          {value: 5, field: "pri", predicate: "unmapped.level = 'low'"},
+          {value: 4, field: "pri", predicate: "unmapped.level = 'medium'"},
+          {value: 3, field: "pri", predicate: "unmapped.level = 'high'"},
+          {value: 2, field: "pri", predicate: "unmapped.level = 'critical'"},
+          {value: 1, field: "pri", predicate: "unmapped.level = 'fatal'"},
+          {value: 0, field: "pri", predicate: "unmapped.level = 'fatal'"},
+          {value: 99, field: "pri", predicate: "unmapped.level = 'other'"},
+          {value: 1, field: "activity_id"},
+          {value: 400101, field: "type_uid"},
+          {value: 4001, field: "class_uid"},
+          {value: 4, field: "category_uid"},
+          {value: "Network Activity", field: "class_name"},
+          {value: "Network Activity", field: "category_name"},
+          {value: "Network Activity: Open", field: "type_name"}
+        ]
+      },
+      {
+        predicate: "msg='Web site hit'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"}
+        ],
+        constants: [
+          {value: 7, field: "pri", predicate: "unmapped.level = 'debug'"},
+          {value: 6, field: "pri", predicate: "unmapped.level = 'informational'"},
+          {value: 5, field: "pri", predicate: "unmapped.level = 'low'"},
+          {value: 4, field: "pri", predicate: "unmapped.level = 'medium'"},
+          {value: 3, field: "pri", predicate: "unmapped.level = 'high'"},
+          {value: 2, field: "pri", predicate: "unmapped.level = 'critical'"},
+          {value: 1, field: "pri", predicate: "unmapped.level = 'fatal'"},
+          {value: 0, field: "pri", predicate: "unmapped.level = 'fatal'"},
+          {value: 99, field: "pri", predicate: "unmapped.level = 'other'"},
+
+
+          {value: 1, field: "activity_id"},
+          {value: 400201, field: "type_uid"},
+          {value: 4002, field: "class_uid"},
+          {value: 4, field: "category_uid"},
+          {value: "HTTP Activity", field: "class_name"},
+          {value: "HTTP Activity", field: "category_name"},
+          {value: "HTTP Activity: Connect", field: "type_name"}
+        ]
+      },
+      {
+        predicate: "msg='Response from NTP Server is either incomplete or invalid'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"}
+        ],
+        constants: [
+          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
+          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
+          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
+          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
+          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
+          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
+          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
+          {value: 2, field: "status_id"},
+          {value: 6, field: "activity_id"},
+          {value: 401306, field: "type_uid"},
+          {value: 4013, field: "class_uid"},
+          {value: 4, field: "category_uid"},
+          {value: "NTP Activity", field: "class_name"},
+          {value: "Network Activity", field: "category_name"},
+          {value: "NTP Activity: Control", field: "type_name"}
+        ]
+      },
+      {
+        predicate: "msg='Failed on updating time from NTP server'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"}
+        ],
+        constants: [
+          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
+          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
+          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
+          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
+          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
+          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
+          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
+          {value: 2, field: "status_id"},
+          {value: 6, field: "activity_id"},
+          {value: 401306, field: "type_uid"},
+          {value: 4013, field: "class_uid"},
+          {value: 4, field: "category_uid"},
+          {value: "NTP Activity", field: "class_name"},
+          {value: "Network Activity", field: "category_name"},
+          {value: "NTP Activity: Control", field: "type_name"}
+        ]
+      },
+      {
+        predicate: "msg='NTP Request sent'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"}
+        ],
+        constants: [
+          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
+          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
+          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
+          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
+          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
+          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
+          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
+          {value: 1, field: "status_id"},
+          {value: 3, field: "activity_id"},
+          {value: 401303, field: "type_uid"},
+          {value: 4013, field: "class_uid"},
+          {value: 4, field: "category_uid"},
+          {value: "NTP Activity", field: "class_name"},
+          {value: "Network Activity", field: "category_name"},
+          {value: "NTP Activity: Client Synchronization", field: "type_name"}
+        ]
+      },
+      {
+        predicate: "msg contains 'Possible TCP Flood'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"}
+        ],
+        constants: [
+          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
+          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
+          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
+          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
+          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
+          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
+          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
+          {value: 1, field: "status_id"},
+          {value: 1, field: "activity_id"},
+          {value: "Create", field: "activity_name"},
+          {value: 200401, field: "type_uid"},
+          {value: 2004, field: "class_uid"},
+          {value: 2, field: "category_uid"},
+          {value: "Detection Finding", field: "class_name"},
+          {value: "Network Activity", field: "category_name"},
+          {value: "Detection Finding: Create", field: "type_name"}
+        ]
+      },
+      {
+        predicate: "msg='User login denied due to bad credentials'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"},
+          {inputs: ["usr"], output: "event.login.userName", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"}
+        ],
+        constants: [
+          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
+          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
+          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
+          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
+          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
+          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
+          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
+          {value: 2, field: "status_id"},
+          {value: 1, field: "activity_id"},
+          {value: "Logon", field: "activity_name"},
+          {value: 300201, field: "type_uid"},
+          {value: 3002, field: "class_uid"},
+          {value: 3, field: "category_uid"},
+          {value: "Authentication", field: "class_name"},
+          {value: "Identity & Access Management", field: "category_name"},
+          {value: "Authentication: Logon", field: "type_name"}
+        ]
+      },
+      {
+        predicate: "msg contains 'Initiator from country blocked'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["country_name"], output:  "src_endpoint.location.country", type:  "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+        ],
+        constants: [
+          {value: 99, field: "severity_id", predicate: "pri=7"}, // Debug
+          {value: 1, field: "severity_id", predicate: "pri=6"},  // Informational
+          {value: 2, field: "severity_id", predicate: "pri=5"},  // Low
+          {value: 3, field: "severity_id", predicate: "pri=4"},  // Medium
+          {value: 4, field: "severity_id", predicate: "pri=3"},  // High
+          {value: 5, field: "severity_id", predicate: "pri=2"},  // Critical
+          {value: 6, field: "severity_id", predicate: "pri=1"},  // Fatal
+          {value: 1, field: "status_id"},
+          {value: 5, field: "activity_id"},
+          {value: "Refuse", field: "activity_name"},
+          {value: 400105, field: "type_uid"},
+          {value: 4001, field: "class_uid"},
+          {value: 4, field: "category_uid"},
+          {value: "Network Activity", field: "class_name"},
+          {value: "Network Activity", field: "category_name"},
+          {value: "Network Activity: Refuse", field: "type_name"}
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+{
+  // specify a time zone if the timestamps in your log are not in GMT
+  // timezone: "GMT-0800"
+
+  attributes: {
+    "dataSource.category": "security",
+    "dataSource.name": "HAProxy",
+    "dataSource.vendor": "HAProxy",
+    "metadata.product.vendor_name": "HAProxy",
+    "metadata.product.name": "HAProxy",
+    "metadata.version": "1.1.0",
+    "severity_id": 99,
+    "status_id": 0,
+  },
+  patterns: {
+    "ts": "\\w+\\s+\\d+\\s+[0-9:]+",
+    "req_ts": "\\[\\d{2}/\\w{3}/\\d{4}:\\d{2}:\\d{2}:\\d{2} -\\d{4}\\]",
+    "host": "\\w+\\[\\d+\\]"
+  },
+  formats: [
+    {
+      "format": "<$syslog_priority$>$ts=ts$ $host=host$: .*",
+      "repeat": false
+    },
+    {
+      format: ".*$_=identifier$=$_=quoteOrSpace$",
+      repeat: true
+    }
+  ],
+  rewrite: [
+    {
+      field: "datetime_of_request",
+      transform: {
+        type: "dateTime",
+        inputFormat: "[dd/MMM/yyyy:HH:mm:ss.SSS]",
+        outputFormat: "timestamp"
+      }
+    }
+  ],
+  mappings: {
+    version: 0,
+    mappings: [
+      {
+        predicate: "http_method='POST'",
+        copies: [
+          { inputs:  ["http_method"], output: "event.type", type: "string"},
+          { inputs: ["ts"], output:  "event_date", type:  "string"},
+          { inputs:  ["datetime_of_request"], output:  "timestamp", type: "timestamp"}
+        ]
+      }
+    ],
+  }
+}

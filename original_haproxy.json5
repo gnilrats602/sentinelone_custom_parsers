@@ -1,0 +1,74 @@
+{
+  // specify a time zone if the timestamps in your log are not in GMT
+  // timezone: "GMT-0800"
+
+  attributes: {
+    "dataSource.category": "security",
+    "dataSource.name": "HAProxy",
+    "dataSource.vendor": "HAProxy",
+    "metadata.product.vendor_name": "HAProxy",
+    "metadata.product.name": "HAProxy",
+    "metadata.version":"1.1.0",
+    "severity_id": 0,
+    "status_id": 0,
+  },
+  patterns: {
+    code: "\\<\\d+\\>",
+    tsPattern: "\\w+\\s+\\d+\\s+[0-9:]+\\s+\\d+:\\d+:\\d+",
+    host: "\\w+-",
+    loglevel:"\\w+-\\d+",
+    eventid: "[\\d+]+",
+    name:"[a-zA-Z ]+",
+    host: "[\\w-]+",
+    vlan: "[\\d]+",
+    src_port: "[a-zA-Z]+\\d\\/\\d\\/\\d+",
+    src_port1: "[a-zA-Z]+\\d+",
+    dst_port: "[a-zA-Z]+\\d\\/\\d\\/\\d+",
+    version: "[0-9.]+\\-[0-9]+",
+    event: "[\\w_]+",
+    alphaOnly: "[a-zA-Z]+",
+    user: "[a-zA-Z]+\\.[a-zA-Z]+",
+    combo: "[a-zA-Z]+\\_[a-zA-Z]+\\-[\\d+]\\-[a-zA-Z]+\\_[a-zA-Z]+",
+    combo1: "[a-zA-Z]+\\-[\\d+]\\-[a-zA-Z]+",
+    combo2: "[a-zA-Z]+\\-[\\d+]\\-[a-zA-Z]+\\_[a-zA-Z]+",
+    combo3: "[a-zA-Z]+\\-[\\d+]\\-[a-zA-Z]+\\_[a-zA-Z]+\\_[a-zA-Z]+",
+    combo4: "[a-zA-Z]+\\-[a-zA-Z]+\\-[a-zA-Z]+\\-[a-zA-Z]+",
+    interface: "[a-zA-Z]+\\d\\/\\d\\/\\d+",
+    event: "[a-zA-Z]+\\s[a-zA-Z]+",
+    event1: "[a-zA-Z\\s]+",
+    session: "[\\d]+",
+    ip: "[0-9.]+",
+    status: "[a-zA-Z]+\\s\\-[a-zA-Z]+",
+    event1: "[a-zA-Z-\\d]+",
+    eventtype: "[a-zA-Z-\\d_]+",
+    duration: "\\d+:\\d+:\\d+",
+    user: "[a-zA-Z-\\d_]+"
+  },
+  formats: [
+    {
+      format: ".*$_=identifier$=$_=quoteOrSpace$",
+      repeat: true
+    },
+    {
+      format: "$code=code$$timestamp=tsPattern$ $hostname=host$.*%$logging=loglevel$-$eventid=eventid$: $eventname=name$.*",
+      repeat: true
+    },
+    {
+       	  format: ".*inside:|faddr $SourceAddress=ip$/$sourcePort=vlan$.*",
+      repeat: true
+    },
+    {
+       	  format: ".*outside-Primary:$DestinationAddress=ip$/$DestinationPort=vlan$.*",
+      repeat: true
+    },
+    {
+       	  format: ".*duration $sessionduration=duration$ bytes $totalbytes=vlan$",
+      repeat: true
+    },
+    {
+      // format: "$timestamp=tsPattern$ $logfile=log$ $format=formate$\\|$make=make$\\|$model=model$ $msg=msg$\\|$version=version$\\|$event_type=event$\\|$msg1=msg$\\|\\d+\\|deviceExternalId=$deviceExternalId$ ESAMID=$ESAMID$ ESADCID=$ESADCID$ ESAStatus=$ESAStatus$"
+   	  format: ".*%$name=eventtype$.*",
+      repeat: true
+    },
+    ]
+}

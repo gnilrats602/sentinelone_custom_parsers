@@ -1,0 +1,39 @@
+{
+  attributes: {
+    "dataSource.category": "security", "dataSource.name": "Sonicwall", "dataSource.vendor": "Dell",
+  },
+  patterns: {
+    valuePattern: "[a-zA-Z0-9\/\\-,_.:;@\\(\\)<>]+",
+    valuePattern_s: "[a-zA-Z0-9\/\\-,_.:;@\\(\\)<> ]+",
+    ipPortInterfacePattern: "\\d{1,3}(?:\\.\\d{1,3}){3}:\\d+:\\w+",
+  },
+
+  formats: [
+    {
+      format: ".*$_=identifier$=$_=quoteOrSpace$.*",
+      repeat: true,
+      rewrites: [
+        {
+          input: "time",
+          output: "timestamp",
+          match: ".*",
+          replace: "$0"
+        }
+      ]
+    },
+    {
+      format: "<$syslog_priority$> .*"
+    },
+    {
+      // Capture src as one combined field
+      format: ".*src=$src_ip_port_interface=ipPortInterfacePattern$.*"
+    },
+    {
+      // Capture dst as one combined field
+      format: ".*dst=$dst_ip_port_interface=ipPortInterfacePattern$.*"
+    }
+
+
+
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  attributes: {
+    "dataSource.category": "security",
+    "dataSource.name": "WatchGuard Firewall",
+    "dataSource.vendor": "WatchGuard"
+  },
+  patterns: {
+    tsPattern: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
+    processNamePattern: "\\w+(?:-\\w+)*",
+    pidPattern: "\\d+",
+    msgIdPattern: "[A-Z0-9-]+",
+    ipPattern: "\\d+\\.\\d+\\.\\d+\\.\\d+",
+    actionValuePattern: "\\w+",
+    zonePattern: "\\S+",
+    protocolPattern: "\\w+",
+    portPattern: "\\d+",
+    msgPattern: "[^\"]+",
+    msg_gap: ".+?(?=\\s(?:\\d+|tcp|udp|icmp))",
+    firewallMsgPattern: ".+",
+    syslogTimestampPattern: "[A-Z][a-z]{2} \\d{1,2} \\d{2}:\\d{2}:\\d{2}",
+    interfacePattern: "\\(([^()]*)\\)[^()]*$+",
+    geoPattern: "[A-Z]{3}",
+    twoWords: "\\S+\\s\\S+",
+    src_network: "\\S+",
+    dst_network: "\\S+(?:\\s(?!\\d+)\\S+)?",
+    policy_id: "\\d+",
+    word: "\\S+",
+    network_segment: "[^\\s]+(?:\\s[^\\s]+)?"
+  },
+  formats: [
+    {
+      format: ".*$_=identifier$=$_=quoteOrSpace$.*",
+      repeat: true
+    },
+    {
+      format: ".* msg_id=$msg_id=quoteOrSpace$ $msg_gap=msg_gap$ $policy_id=policy_id$ $protocol=protocolPattern$ $src_port=portPattern$ $dst_port=portPattern$$src_ip=ipPattern$ $dst_ip=ipPattern$ .*",
+      repeat: true
+    },
+    {
+      format: ".* msg_id=$msg_id=quoteOrSpace$ $msg_gap=msg_gap$ $protocol=protocolPattern$ $src_ip=ipPattern$ $dst_ip=ipPattern$ $src_port=portPattern$ $dst_port=portPattern$.*",
+      repeat: true
+    },
+    {
+      id: "format_https_proxy_full",
+      format: "<$syslog_priority$>$syslog.time=syslogTimestampPattern$ $device.hostname$ $device.serialNumber$ \\($iso_time=tsPattern$\\) $process.name=processNamePattern$\\[$process.pid=pidPattern$\\]: .*",
+      halt: true,
+    },
+    {
+      id: "firewall_error",
+      format: "<$syslog_priority$>$syslog.time=syslogTimestampPattern$ $device.hostname$ $device.serialNumber$ \\($iso_time=tsPattern$\\) firewall: $firewall.msg=firewallMsgPattern$",
+      halt: true
+    }
+  ],
+}
