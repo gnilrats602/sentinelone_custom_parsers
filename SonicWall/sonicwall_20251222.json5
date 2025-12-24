@@ -26,6 +26,7 @@
     "isoTimestamp": "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}",
     "syslogTs": "[A-Z][a-z]{2}\\s[0-9]{1,2}\\s[0-9]{2}:[0-9]{2}:[0-9]{2}",
     "hostShort": "[A-Za-z0-9_.\\\\-]+",
+    "process_id": "[0-9]+",
     "user": "[^\\\"]+",
     "resourceType": "[^\\\"]*",
     "action": "[^\\\"]+",
@@ -35,12 +36,12 @@
   },
   formats: [
     {
-      "format": "<$syslog_priority$>",
-      "repeat": false
+      format: "<$syslog_priority$>",
+      repeat: false
     },
     {
-      "format": ".*time=\"$timestamp$\".*",
-      "repeat": false,
+      format: ".*time=\"$timestamp$\".*",
+      repeat: false,
     },
     {
       format: ".*appName='$appName$' .*",
@@ -67,8 +68,8 @@
       repeat: false,
     },
     {
-      "format": "<$syslog_priority$>$ts=syslogTs$\\s+$hostname=hostShort$ .*",
-      "repeat": false
+      "format": "<$syslog_priority$>$ts=syslogTs$\\s+$hostname=hostShort$\\s+\\[$pid=process_id$\\]: $iso_time=isoTimestamp$ .*",
+      "repeat": false,
     },
     {
       format: ".*msg=$_=quoteOrSpace$.*",
@@ -311,52 +312,6 @@
       },
       {
         predicate: "msg='NTP Request sent'",
-        copies: [
-          {inputs: ["msg"], output: "event.type", type: "String"},
-          {inputs: ["id"], output: "event.source", type: "String"},
-          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
-          {inputs: ["usr"], output: "actor.user.name", type:  "String"}
-        ],
-        renames: [
-          {inputs: ["proto"], output: "network.protocol", type: "String"},
-          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
-		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
-		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
-          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
-          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
-          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
-        ],
-        constants: [
-          {value: 1, field: "status_id"},
-          {value: 3, field: "activity_id"},
-          {value: 401303, field: "type_uid"},
-          {value: 4013, field: "class_uid"},
-          {value: 4, field: "category_uid"},
-          {value: "NTP Activity", field: "class_name"},
-          {value: "Network Activity", field: "category_name"},
-          {value: "NTP Activity: Client Synchronization", field: "type_name"},
-          // Map Syslog pri (0..7) to your desired severity_id values
-          { value: 7, field: "severity_id", predicate: "pri = 0" },  // Emergency
-          { value: 6, field: "severity_id", predicate: "pri = 1" },  // Alert
-          { value: 5, field: "severity_id", predicate: "pri = 2" },  // Critical
-          { value: 4, field: "severity_id", predicate: "pri = 3" },  // Error
-          { value: 3, field: "severity_id", predicate: "pri = 4" },  // Warning
-          { value: 2, field: "severity_id", predicate: "pri = 5" },  // Notice
-          { value: 1, field: "severity_id", predicate: "pri = 6" },  // Informational
-          { value: 0, field: "severity_id", predicate: "pri = 7" },  // Debug
-          // (Optional) textual severity for convenience
-          { value: "Emergency",     field: "severity", predicate: "pri = 0" },
-          { value: "Alert",         field: "severity", predicate: "pri = 1" },
-          { value: "Critical",      field: "severity", predicate: "pri = 2" },
-          { value: "Error",         field: "severity", predicate: "pri = 3" },
-          { value: "Warning",       field: "severity", predicate: "pri = 4" },
-          { value: "Notice",        field: "severity", predicate: "pri = 5" },
-          { value: "Informational", field: "severity", predicate: "pri = 6" },
-          { value: "Debug",         field: "severity", predicate: "pri = 7" }
-        ]
-      },
-      {
-        predicate: "msg='Time update from NTP server was successful'",
         copies: [
           {inputs: ["msg"], output: "event.type", type: "String"},
           {inputs: ["id"], output: "event.source", type: "String"},
@@ -686,6 +641,210 @@
           { value: "Notice",        field: "severity", predicate: "pri = 5" },
           { value: "Informational", field: "severity", predicate: "pri = 6" },
           { value: "Debug",         field: "severity", predicate: "pri = 7" }
+        ]
+      },
+      {
+        predicate: "msg='Unhandled link-local or multicast IPv6 packet dropped'",
+        copies: [
+          {inputs: ["msg"], output: "event.type", type: "String"},
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"},
+          {inputs: ["usr"], output: "event.login.userName", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
+        ],
+        constants: [
+          {value: 1, field: "status_id"},
+          {value: 3, field: "activity_id"},
+          {value: "Reset", field: "activity_name"},
+          {value: 4, field: "category_uid"},
+          {value: "Network Activity", field: "category_name"},
+          {value: 4001, field: "class_uid"},
+          {value: "Network Activity", field: "class_name"},
+          {value: 400103, field: "type_uid"},
+          {value: "Network Activity: Reset", field: "type_name"},
+          // Map Syslog pri (0..7) to your desired severity_id values
+          { value: 7, field: "severity_id", predicate: "pri = 0" },  // Emergency
+          { value: 6, field: "severity_id", predicate: "pri = 1" },  // Alert
+          { value: 5, field: "severity_id", predicate: "pri = 2" },  // Critical
+          { value: 4, field: "severity_id", predicate: "pri = 3" },  // Error
+          { value: 3, field: "severity_id", predicate: "pri = 4" },  // Warning
+          { value: 2, field: "severity_id", predicate: "pri = 5" },  // Notice
+          { value: 1, field: "severity_id", predicate: "pri = 6" },  // Informational
+          { value: 0, field: "severity_id", predicate: "pri = 7" },  // Debug
+          // (Optional) textual severity for convenience
+          { value: "Emergency",     field: "severity", predicate: "pri = 0" },
+          { value: "Alert",         field: "severity", predicate: "pri = 1" },
+          { value: "Critical",      field: "severity", predicate: "pri = 2" },
+          { value: "Error",         field: "severity", predicate: "pri = 3" },
+          { value: "Warning",       field: "severity", predicate: "pri = 4" },
+          { value: "Notice",        field: "severity", predicate: "pri = 5" },
+          { value: "Informational", field: "severity", predicate: "pri = 6" },
+          { value: "Debug",         field: "severity", predicate: "pri = 7" }
+        ]
+      },
+      {
+        predicate: "msg contains 'Possible TCP Flood'",
+        copies: [
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"},
+          {inputs: ["usr"], output: "event.login.userName", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
+        ],
+        constants: [
+          {value: "Possible TCP Flood", field: "event.type"},
+          {value: 1, field: "status_id"},
+          {value: 99, field: "activity_id"},
+          {value: "Other", field: "activity_name"},
+          {value: 400299, field: "type_uid"},
+          {value: 4002, field: "class_uid"},
+          {value: 4, field: "category_uid"},
+          {value: "HTTP Activity", field: "class_name"},
+          {value: "Network Activity", field: "category_name"},
+          {value: "HTTP Activity: Other", field: "type_name"},
+          // Map Syslog pri (0..7) to your desired severity_id values
+          { value: 7, field: "severity_id", predicate: "pri = 0" },  // Emergency
+          { value: 6, field: "severity_id", predicate: "pri = 1" },  // Alert
+          { value: 5, field: "severity_id", predicate: "pri = 2" },  // Critical
+          { value: 4, field: "severity_id", predicate: "pri = 3" },  // Error
+          { value: 3, field: "severity_id", predicate: "pri = 4" },  // Warning
+          { value: 2, field: "severity_id", predicate: "pri = 5" },  // Notice
+          { value: 1, field: "severity_id", predicate: "pri = 6" },  // Informational
+          { value: 0, field: "severity_id", predicate: "pri = 7" },  // Debug
+          // (Optional) textual severity for convenience
+          { value: "Emergency",     field: "severity", predicate: "pri = 0" },
+          { value: "Alert",         field: "severity", predicate: "pri = 1" },
+          { value: "Critical",      field: "severity", predicate: "pri = 2" },
+          { value: "Error",         field: "severity", predicate: "pri = 3" },
+          { value: "Warning",       field: "severity", predicate: "pri = 4" },
+          { value: "Notice",        field: "severity", predicate: "pri = 5" },
+          { value: "Informational", field: "severity", predicate: "pri = 6" },
+          { value: "Debug",         field: "severity", predicate: "pri = 7" }
+        ]
+      },
+      {
+        predicate: "msg contains 'Gateway Anti-Virus Status:'",
+        copies: [
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"},
+          {inputs: ["usr"], output: "event.login.userName", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
+        ],
+        constants: [
+          {value: "Gateway Anti-Virus Status:", field: "event.type"},
+          {value: 1, field: "status_id"},
+          {value: 1, field: "activity_id"},
+          {value: "Create", field: "activity_name"},
+          {value: 200401, field: "type_uid"},
+          {value: 2004, field: "class_uid"},
+          {value: 2, field: "category_uid"},
+          {value: "Detection Finding", field: "class_name"},
+          {value: "Findings", field: "category_name"},
+          {value: "Detection Finding: Create", field: "type_name"},
+          // Map Syslog pri (0..7) to your desired severity_id values
+          { value: 7, field: "severity_id", predicate: "pri = 0" },  // Emergency
+          { value: 6, field: "severity_id", predicate: "pri = 1" },  // Alert
+          { value: 5, field: "severity_id", predicate: "pri = 2" },  // Critical
+          { value: 4, field: "severity_id", predicate: "pri = 3" },  // Error
+          { value: 3, field: "severity_id", predicate: "pri = 4" },  // Warning
+          { value: 2, field: "severity_id", predicate: "pri = 5" },  // Notice
+          { value: 1, field: "severity_id", predicate: "pri = 6" },  // Informational
+          { value: 0, field: "severity_id", predicate: "pri = 7" },  // Debug
+          // (Optional) textual severity for convenience
+          { value: "Emergency",     field: "severity", predicate: "pri = 0" },
+          { value: "Alert",         field: "severity", predicate: "pri = 1" },
+          { value: "Critical",      field: "severity", predicate: "pri = 2" },
+          { value: "Error",         field: "severity", predicate: "pri = 3" },
+          { value: "Warning",       field: "severity", predicate: "pri = 4" },
+          { value: "Notice",        field: "severity", predicate: "pri = 5" },
+          { value: "Informational", field: "severity", predicate: "pri = 6" },
+          { value: "Debug",         field: "severity", predicate: "pri = 7" }
+        ]
+      },
+      {
+        predicate: "note contains 'TCP scanned port list'",
+        copies: [
+          {inputs: ["id"], output: "event.source", type: "String"},
+          {inputs: ["dst_ipv4"], output: "event.target", type: "String"},
+          {inputs: ["usr"], output: "actor.user.name", type:  "String"},
+          {inputs: ["usr"], output: "event.login.userName", type:  "String"}
+        ],
+        renames: [
+          {inputs: ["proto"], output: "network.protocol", type: "String"},
+          {inputs: ["src_ipv4"], output: "src_endpoint.ip_address", type: "String"},
+		  {inputs: ["src_port"], output: "src_endpoint.port", type: "String"},
+		  {inputs: ["src_interface"], output: "src_endpoint.interface", type: "String"},
+          {inputs: ["dst_ipv4"], output: "dst_endpoint.ip_address", type: "String"},
+          {inputs: ["dst_port"], output: "dst_endpoint.port", type: "String"},
+          {inputs: ["dst_interface"], output: "dst_endpoint.interface", type: "String"}
+        ],
+        constants: [
+          {value: "TCP scanned port list", field: "event.type"},
+          {value: 1, field: "status_id"},
+          {value: 1, field: "activity_id"},
+          {value: "Create", field: "activity_name"},
+          {value: 200401, field: "type_uid"},
+          {value: 2004, field: "class_uid"},
+          {value: 2, field: "category_uid"},
+          {value: "Detection Finding", field: "class_name"},
+          {value: "Findings", field: "category_name"},
+          {value: "Detection Finding: Create", field: "type_name"},
+          // Map Syslog pri (0..7) to your desired severity_id values
+          { value: 7, field: "severity_id", predicate: "pri = 0" },  // Emergency
+          { value: 6, field: "severity_id", predicate: "pri = 1" },  // Alert
+          { value: 5, field: "severity_id", predicate: "pri = 2" },  // Critical
+          { value: 4, field: "severity_id", predicate: "pri = 3" },  // Error
+          { value: 3, field: "severity_id", predicate: "pri = 4" },  // Warning
+          { value: 2, field: "severity_id", predicate: "pri = 5" },  // Notice
+          { value: 1, field: "severity_id", predicate: "pri = 6" },  // Informational
+          { value: 0, field: "severity_id", predicate: "pri = 7" },  // Debug
+          // (Optional) textual severity for convenience
+          { value: "Emergency",     field: "severity", predicate: "pri = 0" },
+          { value: "Alert",         field: "severity", predicate: "pri = 1" },
+          { value: "Critical",      field: "severity", predicate: "pri = 2" },
+          { value: "Error",         field: "severity", predicate: "pri = 3" },
+          { value: "Warning",       field: "severity", predicate: "pri = 4" },
+          { value: "Notice",        field: "severity", predicate: "pri = 5" },
+          { value: "Informational", field: "severity", predicate: "pri = 6" },
+          { value: "Debug",         field: "severity", predicate: "pri = 7" }
+        ]
+      },
+       {
+        predicate: "hostname='APX00240006095-B'",
+        copies: [
+          {inputs: ["iso_time"], output: "timestamp", type: "timestamp"},
+          {inputs: ["hostname"], output: "event.source", type: "String"},
+          {inputs: ["appliance"], output: "event.target", type: "String"},
+          {inputs: ["user"], output: "actor.user.name", type:  "String"},
+        ],
+        constants: [
+			{value: "PowerStore Audit Event", field: "event.type"}
         ]
       },
     ]
