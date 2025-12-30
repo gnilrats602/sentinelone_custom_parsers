@@ -1,0 +1,20 @@
+{
+  predicate: "msg='Connection Opened'",
+  constants: [
+    // Category
+    {value: 4, field: "category_uid"},
+    {value: "Network Activity", field: "category_name"},
+    // Class
+    {value: 4001, field: "class_uid"},
+    {value: "Network Activity", field: "class_name"},
+    // Type
+    {value: 400101, field: "type_uid"},
+    {value: "Network Activity: Open", field: "type_name"},
+    // Activity
+    {value: 1, field: "activity_id"},
+    {value: "Connection", field: "activity_name"},
+    // Status
+    {value: 1, field: "status_id"},
+    {value:  "Success", field:  "status"}
+  ]
+}

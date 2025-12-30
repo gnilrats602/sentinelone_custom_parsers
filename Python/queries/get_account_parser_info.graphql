@@ -1,0 +1,11 @@
+query getConfigurationFiles
+{
+    configFiles
+    {
+      udoId
+      name
+      readOnly
+      version
+      __typename
+    }
+}
